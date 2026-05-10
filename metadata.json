@@ -1,0 +1,8 @@
+{
+  "name": "Rosy AI Assistant",
+  "description": "Sassy AI assistant with Live Voice capabilities, chat, and command processing.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
