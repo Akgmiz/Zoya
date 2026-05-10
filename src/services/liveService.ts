@@ -64,7 +64,7 @@ export class LiveSessionManager {
 
     try {
       // Step 1: Upload file to Gemini Files API
-      // Using BrowserUploader implicitly
+      console.log(`Uploading ${file.name} to Gemini Files API...`);
       const uploadResult = await this.ai.files.upload({
         file: file,
         config: {
@@ -73,13 +73,13 @@ export class LiveSessionManager {
         },
       });
 
-      console.log("File uploaded via Files API:", uploadResult.uri, uploadResult.mimeType);
+      console.log("File uploaded successfully:", uploadResult.uri);
 
       // Step 2: Send file reference to the live session
       const session = await this.sessionPromise;
       
-      // We send it as a media chunk with file_uri which is the standard wire format
-      // even if the TS definition is missing it.
+      // We send it using fileData which the model supports in parts, 
+      // though LiveClientRealtimeInput might require casting
       (session as any).sendRealtimeInput({
         mediaChunks: [{
           mimeType: uploadResult.mimeType,
@@ -87,15 +87,14 @@ export class LiveSessionManager {
         } as any],
       });
 
-      // Also send a text prompt to notify the model
+      // Also send a textual context for the model 
       session.sendRealtimeInput({
-        text: `I've shared a ${file.type} file with you named "${file.name}". Please examine it.`
+        text: `I've shared a file with you: ${file.name} (${file.type}). Please analyze it.`
       });
 
-      console.log(`Sent file reference and prompt for: ${file.name}`);
+      console.log(`Sent file reference to session: ${file.name}`);
     } catch (error) {
-      console.error("Failed to upload file via Files API, falling back to inline:", error);
-      // Fallback: If Files API fails, use inline sending logic
+      console.error("Files API upload failed, falling back to inline data:", error);
       return this.sendFileInline(file);
     }
   }
@@ -117,44 +116,18 @@ export class LiveSessionManager {
     });
 
     const session = await this.sessionPromise;
+    
+    // Using inlineData as suggested by user
+    (session as any).sendRealtimeInput({
+      inlineData: {
+        mimeType: file.type,
+        data: base64Data,
+      },
+    });
 
-    if (file.type.startsWith("image/")) {
-      // Images are best sent as 'video' frames in live sessions
-      session.sendRealtimeInput({
-        video: {
-          mimeType: file.type,
-          data: base64Data,
-        },
-      });
-    } else if (file.type.startsWith("text/")) {
-      // For text files, we can just send the content as text input
-      try {
-        const textContent = new TextDecoder().decode(Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)));
-        session.sendRealtimeInput({
-          text: `Content of ${file.name}:\n\n${textContent}`,
-        });
-      } catch (err) {
-        // Fallback for non-utf8
-        session.sendRealtimeInput({
-          mediaChunks: [{
-            mimeType: file.type,
-            data: base64Data,
-          }],
-        });
-      }
-    } else {
-      // PDF and others go as media chunks
-      session.sendRealtimeInput({
-        mediaChunks: [{
-          mimeType: file.type,
-          data: base64Data,
-        }],
-      });
-    }
-
-    // Always send a small prompt to help the model transition
+    // Also send a text prompt to notify the model
     session.sendRealtimeInput({
-      text: `I just shared a ${file.type} file called "${file.name}" inline. Can you see it?`
+      text: `I just shared a small file with you inline: ${file.name}. Can you see it?`
     });
 
     console.log(`Sent file inline: ${file.name} (${(file.size/1024).toFixed(1)} KB)`);
