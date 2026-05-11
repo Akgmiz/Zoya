@@ -60,7 +60,7 @@ export class LiveSessionManager {
     if (!apiKey) {
       console.error("GEMINI_API_KEY is not defined in the environment");
     }
-    this.ai = new GoogleGenAI({ apiKey: apiKey, apiVersion: 'v1beta' });
+    this.ai = new GoogleGenAI({ apiKey: apiKey, apiVersion: "v1beta" });
   }
 
   async sendFile(file: File): Promise<void> {
@@ -191,13 +191,17 @@ export class LiveSessionManager {
       this.processor.connect(this.audioContext.destination);
 
       const connPromise = this.ai.live.connect({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-3.1-flash-live-preview",
         config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
+          generationConfig: {
+            responseModalities: [Modality.AUDIO],
+            speechConfig: {
+              voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } },
+            },
           },
-          systemInstruction,
+          systemInstruction: {
+            parts: [{ text: systemInstruction }]
+          },
           tools: [
             { googleSearch: {} },
             {
@@ -259,10 +263,12 @@ export class LiveSessionManager {
           },
           onclose: () => this.stop(),
           onerror: (err) => {
-            console.error("Live API error details:", err);
+            console.error("Live API Error:", err);
             if (err instanceof Error) {
-              console.error("Error message:", err.message);
-              console.error("Error stack:", err.stack);
+              // Custom help message for common errors
+              if (err.message.includes("Permission denied")) {
+                console.error("DEBUG: This might be an API Key restriction or quota issue.");
+              }
             }
             this.stop();
           }

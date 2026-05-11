@@ -29,7 +29,7 @@ export function Visualizer({ isActive }: { isActive: boolean }) {
       />
       
       <div className="relative z-10 w-28 h-28 bg-gradient-to-br from-rose-500 to-rose-700 rounded-full flex items-center justify-center shadow-lg border-4 border-rose-300/30">
-        <span className="text-white font-rajdhani font-bold text-2xl tracking-widest uppercase">Zoya</span>
+        <span className="text-white font-rajdhani font-bold text-2xl tracking-widest uppercase">Rosy</span>
       </div>
     </div>
   );

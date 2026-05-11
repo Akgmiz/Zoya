@@ -52,9 +52,13 @@ export default function App() {
       };
 
       await session.start();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to start session:", error);
-      if (error instanceof DOMException && error.name === "NotAllowedError") {
+      const errorMsg = error?.message || String(error);
+      if (
+        (error instanceof DOMException && error.name === "NotAllowedError") ||
+        errorMsg.toLowerCase().includes("permission denied")
+      ) {
         setShowPermissionModal(true);
       }
       setAppState("idle");
@@ -153,7 +157,7 @@ export default function App() {
             disabled={appState === "idle"}
             onFileSelected={async (file) => {
               if (liveSessionRef.current) {
-                await liveSessionRef.current.sendFile(file);
+                await liveSessionRef.current.sendFileInline(file);
               }
             }}
           />
