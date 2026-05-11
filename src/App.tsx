@@ -3,6 +3,7 @@ import { Mic, MicOff, Loader2, Volume2, VolumeX } from "lucide-react";
 import { LiveSessionManager } from "./services/liveService";
 import { Visualizer } from "./components/Visualizer";
 import { PermissionModal } from "./components/PermissionModal";
+import { PrivacyModal } from "./components/PrivacyModal";
 import FileUploadButton from "./components/FileUploadButton";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -12,6 +13,7 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>("idle");
   const [isMuted, setIsMuted] = useState(false);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const liveSessionRef = useRef<LiveSessionManager | null>(null);
 
@@ -78,6 +80,11 @@ export default function App() {
         />
       )}
 
+      <PrivacyModal 
+        isOpen={showPrivacy} 
+        onClose={() => setShowPrivacy(false)} 
+      />
+
       {/* Background gradients */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-violet-900/20 blur-[120px] rounded-full" />
@@ -90,7 +97,7 @@ export default function App() {
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-500 to-pink-500 flex items-center justify-center font-bold text-sm">
             R
           </div>
-          <h1 className="text-xl font-serif font-medium tracking-wide opacity-90">Rosy</h1>
+          <h1 className="text-xl font-serif font-medium tracking-wide opacity-90">Rosy Elite</h1>
         </div>
         <button
           onClick={() => setIsMuted(!isMuted)}
@@ -183,6 +190,13 @@ export default function App() {
             )}
           </button>
         </div>
+
+        <button 
+          onClick={() => setShowPrivacy(true)}
+          className="text-[10px] text-gray-500 uppercase tracking-widest hover:text-gray-300 transition-colors mt-4"
+        >
+          Privacy Policy
+        </button>
       </footer>
     </div>
   );
