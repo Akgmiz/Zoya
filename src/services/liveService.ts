@@ -56,7 +56,11 @@ export class LiveSessionManager {
   public onCommand: (url: string) => void = () => {};
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is not defined in the environment");
+    }
+    this.ai = new GoogleGenAI({ apiKey: apiKey, apiVersion: 'v1beta' });
   }
 
   async sendFile(file: File): Promise<void> {
@@ -187,7 +191,7 @@ export class LiveSessionManager {
       this.processor.connect(this.audioContext.destination);
 
       const connPromise = this.ai.live.connect({
-        model: "gemini-3.1-flash-live-preview",
+        model: "gemini-2.0-flash-exp",
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -217,7 +221,8 @@ export class LiveSessionManager {
           onopen: () => this.onStateChange("listening"),
           onmessage: async (message: LiveServerMessage) => {
             // Audio playback
-            const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+            // Robust check for audio data in the message
+            const base64Audio = message.data || message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (base64Audio && !this.isMuted) {
               this.onStateChange("speaking");
               this.playAudioChunk(base64Audio);
@@ -254,7 +259,11 @@ export class LiveSessionManager {
           },
           onclose: () => this.stop(),
           onerror: (err) => {
-            console.error("Live API error:", err);
+            console.error("Live API error details:", err);
+            if (err instanceof Error) {
+              console.error("Error message:", err.message);
+              console.error("Error stack:", err.stack);
+            }
             this.stop();
           }
         }

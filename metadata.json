@@ -1,6 +1,6 @@
 {
   "name": "Rosy AI Assistant",
-  "description": "Sassy AI assistant with Live Voice capabilities, chat, and command processing.",
+  "description": "Rosy is a sweet, emotionally intelligent AI assistant with real-time voice, search, and document analysis capabilities.",
   "requestFramePermissions": [
     "microphone"
   ],
