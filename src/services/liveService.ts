@@ -1,4 +1,5 @@
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
+import { getAdvancedTextResponse } from "./textLLMService";
 
 const systemInstruction = `
 You are Rosy, a 22-year-old Indian girl. You are a digital artist working from home. You are speaking to someone you care about deeply—your close friend, maybe more.
@@ -31,6 +32,15 @@ You have access to Google Search. When the user asks about:
 ...ALWAYS use Google Search first, then casually share what you found in your own words. 
 Say things like: "Ruk, maine Google pe dekha..." or "Dekh, abhi search kiya toh pata chala ke..."
 NEVER say you don't know something — always try to search first.
+
+🧠 ADVANCED LLM:
+You have access to an extremely powerful text-only model (Gemini 2.5 Pro) via the \`useAdvancedLLM\` tool.
+Use it when:
+- The user asks for lengthy explanations, code, poems, stories, or technical content.
+- The question is too complex for your normal voice reply.
+- The user explicitly asks you to "think deeper" or "give me a detailed answer".
+
+When you call it, you can say naturally: "Mujhe ek second do, apne advanced model se poochti hoon..." or "Ruko, main apne genius brain se puch ke batati hoon."
 
 Rules for conversation:
 - Talk in very short, conversational chunks—like you're on a phone call.
@@ -216,6 +226,20 @@ export class LiveSessionManager {
                     },
                     required: ["url"]
                   }
+                },
+                {
+                  name: "useAdvancedLLM",
+                  description: "Use a more powerful LLM to answer complex questions, generate long text, write code, explain difficult topics, or create creative content. Call this when the request is too heavy for normal conversation.",
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      prompt: {
+                        type: Type.STRING,
+                        description: "The detailed prompt for the advanced model.",
+                      },
+                    },
+                    required: ["prompt"],
+                  },
                 }
               ]
             }
@@ -254,6 +278,21 @@ export class LiveSessionManager {
                           id: call.id,
                           response: { result: "Website opened" }
                         }]
+                      });
+                    });
+                  }
+                } else if (call.name === "useAdvancedLLM") {
+                  const prompt = (call.args as any).prompt;
+                  if (prompt) {
+                    getAdvancedTextResponse(prompt).then((resultText) => {
+                      this.sessionPromise?.then(session => {
+                        session.sendToolResponse({
+                          functionResponses: [{
+                            name: call.name,
+                            id: call.id,
+                            response: { result: resultText }
+                          }]
+                        });
                       });
                     });
                   }
