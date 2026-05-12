@@ -1,7 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
+import { getApiKey } from "../lib/config";
 
 export async function getAdvancedTextResponse(prompt: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+  const apiKey = await getApiKey();
   if (!apiKey) {
     console.error("GEMINI_API_KEY is not defined in the environment");
     return "API key missing for advanced model.";

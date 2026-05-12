@@ -1,5 +1,6 @@
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import { getAdvancedTextResponse } from "./textLLMService";
+import { getApiKey } from "../lib/config";
 
 const systemInstruction = `
 You are Rosy, a 22-year-old Indian girl. You are a digital artist working from home. You are speaking to someone you care about deeply—your close friend, maybe more.
@@ -51,7 +52,7 @@ Rules for conversation:
 `;
 
 export class LiveSessionManager {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
   private sessionPromise: Promise<any> | null = null;
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
@@ -66,11 +67,17 @@ export class LiveSessionManager {
   public onCommand: (url: string) => void = () => {};
 
   constructor() {
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Initialization of ai is deferred until an api call to avoid sync requirement
+  }
+
+  private async getAi(): Promise<GoogleGenAI> {
+    if (this.ai) return this.ai;
+    const apiKey = await getApiKey();
     if (!apiKey) {
-      console.error("GEMINI_API_KEY is not defined in the environment");
+      console.error("GEMINI_API_KEY is not available from config");
     }
-    this.ai = new GoogleGenAI({ apiKey: apiKey, apiVersion: "v1beta" });
+    this.ai = new GoogleGenAI({ apiKey, apiVersion: "v1beta" });
+    return this.ai;
   }
 
   async sendFile(file: File): Promise<void> {
@@ -79,7 +86,8 @@ export class LiveSessionManager {
     try {
       // Step 1: Upload file to Gemini Files API
       console.log(`Uploading ${file.name} to Gemini Files API...`);
-      const uploadResult = await this.ai.files.upload({
+      const ai = await this.getAi();
+      const uploadResult = await ai.files.upload({
         file: file,
         config: {
           mimeType: file.type,
@@ -200,7 +208,8 @@ export class LiveSessionManager {
       this.source.connect(this.processor);
       this.processor.connect(this.audioContext.destination);
 
-      const connPromise = this.ai.live.connect({
+      const ai = await this.getAi();
+      const connPromise = ai.live.connect({
         model: "gemini-3.1-flash-live-preview",
         config: {
           generationConfig: {
